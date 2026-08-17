@@ -17,6 +17,7 @@ type ListPanel struct {
 	selectedIndex      int
 	emptyMessage       string
 	onSelectionChanged func(int)
+	rowFormatter       func(ListItem[any], int) string
 }
 
 func NewListPanel(id, title, subtitle, footer string, visible bool) *ListPanel {
@@ -57,8 +58,13 @@ func (l *ListPanel) Render(g *gocui.Gui, dim Dimension) error {
 			return err
 		}
 	} else {
+		width, _ := v.Size()
 		for _, item := range l.items {
-			if _, err := v.Write([]byte(item.DisplayText + "\n")); err != nil {
+			text := item.DisplayText
+			if l.rowFormatter != nil {
+				text = l.rowFormatter(item, width)
+			}
+			if _, err := v.Write([]byte(text + "\n")); err != nil {
 				return err
 			}
 		}
@@ -105,6 +111,10 @@ func (l *ListPanel) SetEmptyMessage(message string) {
 
 func (l *ListPanel) SetOnSelectionChanged(handler func(int)) {
 	l.onSelectionChanged = handler
+}
+
+func (l *ListPanel) SetRowFormatter(formatter func(ListItem[any], int) string) {
+	l.rowFormatter = formatter
 }
 
 func (l *ListPanel) notifySelectionChanged(previousIndex int) {

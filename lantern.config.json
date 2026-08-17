@@ -1,0 +1,18 @@
+{
+  "extends": [
+    "lantern:recommended"
+  ],
+  "project": {
+    "root": ".."
+  },
+  "rules": {
+    "lantern/accessible-name": "error",
+    "lantern/focus-visible": "warn",
+    "lantern/grid-navigation": "warn",
+    "lantern/keyboard-access": "error"
+  },
+  "runtime": {
+    "enabled": true,
+    "timeout": 5000
+  }
+}

@@ -55,6 +55,9 @@ func (a *App) formatKeybindingsForStatusBar() string {
 		if workspace := a.activeWorkspaceDefinition(); workspace != nil && workspace.ID == "queue" {
 			return "Space:toggle a:all n:none Enter:view r:run 1-4:tabs q:quit"
 		}
+		if workspace := a.activeWorkspaceDefinition(); workspace != nil && workspace.ID == "config" {
+			return "↑/↓: select | Enter: edit | s: save | r: reload | 1-4: tabs | q: quit"
+		}
 		return "1-4: tabs | Tab/⇧Tab: panel | Enter: focus | q: quit"
 	}
 	var parts []string

@@ -64,6 +64,12 @@ func (m *BaseModal) Show(message string) {
 	m.message = message
 
 	// Save previous focus
+	if m.app.g == nil {
+		m.SetVisible(true)
+		m.app.IsModalOpen = true
+		m.app.currentModal = m.self
+		return
+	}
 	if cv := m.app.g.CurrentView(); cv != nil {
 		m.app.previousView = cv.Name()
 		logDebugf("BaseModal %s: Saved previous view: %s", m.ID(), m.app.previousView)
@@ -97,7 +103,7 @@ func (m *BaseModal) Hide() {
 	}
 
 	// Restore previous focus
-	if m.app.previousView != "" {
+	if m.app.g != nil && m.app.previousView != "" {
 		m.app.g.Update(func(g *gocui.Gui) error {
 			_, err := g.SetCurrentView(m.app.previousView)
 			if err != nil {
@@ -175,6 +181,7 @@ func (m *BaseModal) Render(g *gocui.Gui, dim Dimension) error {
 		return err
 	}
 	m.SetView(v)
+	v.Visible = true
 
 	// Apply frame and title styling
 	v.FrameRunes = m.Panel.frameRunes

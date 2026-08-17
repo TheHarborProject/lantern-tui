@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -13,9 +14,11 @@ import (
 type InputModal struct {
 	*BaseModal
 	onSubmit         func(input string) // Called when user submits input (Enter)
-	onCancel         func()              // Called when user cancels (ESC) - optional
-	maxLength        int                 // Maximum input length (0 = unlimited)
-	spaceReplacement rune                // If set, replaces space with this character (0 = allow spaces)
+	onCancel         func()             // Called when user cancels (ESC) - optional
+	onValidateSubmit func(input string) error
+	initialValue     string
+	maxLength        int  // Maximum input length (0 = unlimited)
+	spaceReplacement rune // If set, replaces space with this character (0 = allow spaces)
 }
 
 // NewInputModal creates a new input modal
@@ -24,7 +27,7 @@ type InputModal struct {
 func NewInputModal(id, title string, modalType ModalType, spaceReplacement rune, app *App) *InputModal {
 	modal := &InputModal{
 		BaseModal:        NewBaseModal(id, title, "", "Press Enter to submit or ESC to cancel", modalType, app),
-		maxLength:        0,                 // unlimited by default
+		maxLength:        0,                // unlimited by default
 		spaceReplacement: spaceReplacement, // 0 = allow spaces
 	}
 	// Set self reference for proper currentModal assignment
@@ -49,6 +52,18 @@ func (m *InputModal) SetOnCancel(fn func()) {
 	m.onCancel = fn
 }
 
+func (m *InputModal) SetOnValidateSubmit(fn func(input string) error) {
+	m.onValidateSubmit = fn
+}
+
+func (m *InputModal) SetInitialValue(value string) {
+	m.initialValue = value
+}
+
+func (m *InputModal) InitialValue() string {
+	return m.initialValue
+}
+
 // SetMaxLength sets the maximum input length (0 = unlimited)
 func (m *InputModal) SetMaxLength(length int) {
 	m.maxLength = length
@@ -62,6 +77,9 @@ func (m *InputModal) Show(message string) {
 
 	// Call parent Show with empty message
 	m.BaseModal.Show("")
+	if m.app.g == nil {
+		return
+	}
 
 	// Enable cursor globally for input
 	m.app.g.Cursor = true
@@ -72,9 +90,10 @@ func (m *InputModal) Show(message string) {
 		if v != nil {
 			// Clear TextArea (the actual editable buffer, not just View buffer)
 			v.TextArea.Clear()
+			v.TextArea.TypeString(m.initialValue)
 			v.RenderTextArea()
 
-			v.SetCursor(0, 0)
+			v.SetCursor(len([]rune(m.initialValue)), 0)
 			v.SetOrigin(0, 0)
 
 			// Enable editing immediately
@@ -98,6 +117,10 @@ func (m *InputModal) Show(message string) {
 
 // Hide closes the modal and disables cursor
 func (m *InputModal) Hide() {
+	if m.app.g == nil {
+		m.BaseModal.Hide()
+		return
+	}
 	// Disable cursor when modal closes
 	m.app.g.Cursor = false
 	logDebugf("InputModal %s: Cursor disabled", m.ID())
@@ -164,6 +187,7 @@ func (m *InputModal) Render(g *gocui.Gui, dim Dimension) error {
 		return err
 	}
 	m.SetView(v)
+	v.Visible = true
 
 	// Apply frame and title styling
 	v.FrameRunes = m.Panel.frameRunes
@@ -234,12 +258,7 @@ func (m *InputModal) RegisterBindings(g *gocui.Gui, app *App) error {
 			input := strings.TrimSpace(v.Buffer())
 			logDebugf("InputModal %s: Enter pressed, input=%s", m.ID(), input)
 
-			// Call onSubmit callback with input
-			if m.onSubmit != nil {
-				m.onSubmit(input)
-			}
-
-			m.Hide()
+			m.SubmitAndClose(input)
 			return nil
 		})
 	if err != nil {
@@ -248,4 +267,25 @@ func (m *InputModal) RegisterBindings(g *gocui.Gui, app *App) error {
 
 	logDebugf("InputModal %s: Registered Enter keybinding", m.ID())
 	return nil
+}
+
+func (m *InputModal) SubmitAndClose(input string) bool {
+	if !m.Submit(input) {
+		return false
+	}
+	m.Hide()
+	return true
+}
+
+func (m *InputModal) Submit(input string) bool {
+	if m.onValidateSubmit != nil {
+		if err := m.onValidateSubmit(input); err != nil {
+			m.Panel.subtitle = fmt.Sprintf("Error: %v", err)
+			return false
+		}
+	}
+	if m.onSubmit != nil {
+		m.onSubmit(input)
+	}
+	return true
 }

@@ -79,6 +79,10 @@ func (p *Panel) SetFooter(footer string) {
 	p.footer = footer
 }
 
+func (p *Panel) SetTitle(title string) {
+	p.title = title
+}
+
 // AdjustOrigin adjusts the origin to ensure it's within valid bounds
 // Call this after content is rendered but before SetOrigin
 func (p *Panel) AdjustOrigin(v *gocui.View) {

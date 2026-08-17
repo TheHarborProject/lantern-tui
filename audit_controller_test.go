@@ -10,7 +10,7 @@ func newTestController() (*AuditController, *ListPanel, *ListPanel, *ListPanel, 
 	states := NewListPanel("states", "States", "", "", true)
 	checks := NewListPanel("checks", "Checks", "", "", true)
 	evidence := NewTextPanel("evidence", "Evidence", "", "", true)
-	controller := NewAuditController(mockComponents(), components, states, checks, evidence)
+	controller := NewAuditController(fixtureComponents(), components, states, checks, evidence)
 	return controller, components, states, checks, evidence
 }
 

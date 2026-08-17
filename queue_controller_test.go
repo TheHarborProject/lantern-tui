@@ -25,7 +25,7 @@ func newQueueFixture() queueFixture {
 	checks := NewListPanel("checks", "Checks", "", "", true)
 	evidence := NewTextPanel("evidence", "Evidence", "", "", true)
 	queuePanel := NewListPanel("queue", "Queue", "", "", true)
-	audit := NewAuditController(mockComponents(), components, states, checks, evidence)
+	audit := NewAuditController(fixtureComponents(), components, states, checks, evidence)
 	workspaces := []Workspace{
 		{ID: "audit", Name: "Audit", Components: []UIComponent{components, checks, states, evidence}, Layout: &boxlayout.Box{Window: "components"}},
 		{ID: "runs", Name: "Runs", Components: []UIComponent{NewTextPanel("runs", "Runs", "", "", true)}, Layout: &boxlayout.Box{Window: "runs"}},

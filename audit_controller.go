@@ -171,7 +171,7 @@ func (c *AuditController) refreshFocusedChecks() {
 		if engine == "" {
 			engine = "unsupported"
 		}
-		items = append(items, ListItem[any]{DisplayText: fmt.Sprintf("%s %s  %s  %s  %s", statusIcon(check.Status), check.RuleID, check.Severity, engine, check.OutcomeReason), Object: check})
+		items = append(items, ListItem[any]{DisplayText: fmt.Sprintf("%s %s  %s  %s  %s", statusIcon(check.Status), check.RuleID, check.Severity, engine, check.OutcomeReason.Detail), Object: check})
 	}
 	c.checksPanel.SetItems(items)
 	c.checksPanel.SetSelectedIndex(c.selectedCheck)
@@ -248,11 +248,14 @@ func (c *AuditController) refreshEvidence() {
 		return
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Rule\n%s\n\nStatus\n%s\n\nEngine\n%s\n\nState\n%s\n\nOutcome\n%s\n\nEvidence\n", check.RuleID, strings.ToUpper(string(check.Status)), check.Engine, stateLabel(state), check.OutcomeReason)
-	for _, field := range check.Evidence {
-		fmt.Fprintf(&b, "%-12s %s\n", field.Name, field.Value)
+	fmt.Fprintf(&b, "Rule\n%s\n\nStatus\n%s\n\nEngine\n%s\n\nState\n%s\n\nOutcome reason\n%s\n%s\nProvenance: %s\n\nEvidence\n", check.RuleID, strings.ToUpper(string(check.Status)), check.Engine, stateLabel(state), check.OutcomeReason.Code, check.OutcomeReason.Detail, check.OutcomeReason.Provenance)
+	for _, record := range check.Evidence {
+		renderEvidenceRecord(&b, record)
 	}
-	fmt.Fprintf(&b, "\nExpected\n%s\n\nObserved\n%s\n\nSource\n%s\n", check.Expected, check.Observed, check.Source)
+	if check.Source.File != "" {
+		fmt.Fprintf(&b, "\nCheck source\n%s:%d:%d\n", check.Source.File, check.Source.Line, check.Source.Column)
+	}
+	fmt.Fprintf(&b, "\nTiming\n%d ms\n", check.DurationMS)
 	c.evidencePanel.ScrollToTop()
 	c.evidencePanel.SetContent(b.String())
 }
@@ -330,4 +333,34 @@ func checkSummary(state *State) string {
 		counts[check.Status]++
 	}
 	return fmt.Sprintf("%d fail · %d review · %d pass", counts[StatusFail], counts[StatusReview], counts[StatusPass])
+}
+
+func renderEvidenceRecord(b *strings.Builder, record EvidenceWireDTO) {
+	switch record.Kind {
+	case "observation":
+		b.WriteString("observation\n")
+		if record.Observation != nil {
+			for _, field := range sortedFields(record.Observation.Facts) {
+				fmt.Fprintf(b, "  %-12s %s\n", field.Name, field.Value)
+			}
+		}
+	case "expectation":
+		b.WriteString("expectation\n")
+		if record.Expectation != nil {
+			fmt.Fprintf(b, "  expected     %s\n  observed     %s\n", record.Expectation.Expected, record.Expectation.Observed)
+		}
+	case "element":
+		b.WriteString("element\n")
+		if record.Element != nil {
+			fmt.Fprintf(b, "  selector     %s\n  html         %s\n", record.Element.Selector, record.Element.HTML)
+		}
+	case "source":
+		b.WriteString("source\n")
+		if record.Source != nil {
+			fmt.Fprintf(b, "  file         %s\n  line         %d\n  column       %d\n", record.Source.File, record.Source.Line, record.Source.Column)
+		}
+	default:
+		fmt.Fprintf(b, "%s\n  unsupported evidence kind\n", record.Kind)
+	}
+	b.WriteString("\n")
 }

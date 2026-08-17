@@ -29,7 +29,7 @@ func newWorkspaceFixture() workspaceFixture {
 	runs.SetContent("No audit runs loaded.\n")
 	queue.SetContent("Audit queue workspace is not implemented yet.\n")
 	config.SetContent("No Lantern configuration loaded.\n")
-	controller := NewAuditController(mockComponents(), components, states, checks, evidence)
+	controller := NewAuditController(fixtureComponents(), components, states, checks, evidence)
 	workspaces := []Workspace{
 		{ID: "audit", Name: "Audit", Components: []UIComponent{components, checks, states, evidence}, Layout: &boxlayout.Box{Children: []*boxlayout.Box{{Window: "components"}, {Window: "checks"}, {Window: "states"}, {Window: "evidence"}}}},
 		{ID: "runs", Name: "Runs", Components: []UIComponent{runs}, Layout: &boxlayout.Box{Window: "runs"}},

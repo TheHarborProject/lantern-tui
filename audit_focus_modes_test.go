@@ -20,7 +20,7 @@ func newAuditFocusFixture() auditFocusFixture {
 	states := NewListPanel("states", "States", "", "", true)
 	checks := NewListPanel("checks", "Checks", "", "", true)
 	evidence := NewTextPanel("evidence", "Evidence", "", "", true)
-	controller := NewAuditController(mockComponents(), components, states, checks, evidence)
+	controller := NewAuditController(fixtureComponents(), components, states, checks, evidence)
 	app := &App{
 		components:      []UIComponent{components, checks, states, evidence},
 		statusBar:       NewStatusBar("statusbar", AppConfig{}),
